@@ -1,0 +1,327 @@
+/* وفّر — Saudi smart savings app */
+
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --green: #1B3424;
+  --green-deep: #013E37;
+  --green-ink: #0d1e15;
+  /* Cream tones, lowered saturation.
+     --cream:        on-dark text only (used on dark-green hero cards).
+     --vanilla:      MAIN page background — warm off-white, no yellow flood.
+     --vanilla-soft: light beige for cards / surfaces.
+     --cream-accent: tiny accent only (buttons, badges). */
+  --cream: #F4E7BE;
+  --vanilla: #FAF7F0;
+  --vanilla-soft: #F5EFE0;
+  --cream-accent: #EFE7D2;
+  --moss: #898F65;
+  --sadu-brown: #A8754A;
+  --sadu-brown-soft: #C99B71;
+  --najdi-red: #9E2B25;
+  --najdi-red-soft: #C44841;
+  --sky: #BCD4E6;
+  --ink: #1a1c14;
+  --ink-soft: #4a4d3e;
+  /* Map tones */
+  --map-land: #EFE7D2;
+  --map-road: #FAF7F0;
+  --map-park: #C7CDA8;
+  --map-block: #E5DBC0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'IBM Plex Sans Arabic', 'Rubik', system-ui, sans-serif;
+  background: #2a2a2a;
+  color: var(--ink);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* App-content reset (lives inside iOS frame) */
+.waffer-app {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  direction: rtl;
+  background: var(--vanilla);
+  height: 100%;
+  min-height: 100%;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: var(--ink);
+}
+.waffer-app::-webkit-scrollbar { width: 0; }
+
+/* The display wordmark */
+.wordmark {
+  font-family: 'Rubik', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.num {
+  font-family: 'Rubik', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ─────────── SADU PATTERNS (geometric only) ─────────── */
+
+/* Triangular zigzag band — classic Sadu */
+.sadu-band {
+  height: 14px;
+  background-image:
+    linear-gradient(135deg, var(--sadu-brown) 25%, transparent 25%),
+    linear-gradient(225deg, var(--sadu-brown) 25%, transparent 25%),
+    linear-gradient(45deg, var(--sadu-brown) 25%, transparent 25%),
+    linear-gradient(315deg, var(--sadu-brown) 25%, transparent 25%);
+  background-position: 7px 0, 7px 0, 0 0, 0 0;
+  background-size: 14px 14px;
+  background-repeat: repeat-x;
+  background-color: transparent;
+}
+
+/* X-cross Sadu band */
+.sadu-x-band {
+  height: 18px;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 2px, var(--najdi-red) 2.5px, var(--najdi-red) 4px, transparent 4.5px) 0 0 / 18px 18px repeat-x,
+    linear-gradient(90deg, var(--najdi-red) 1px, transparent 1px) 0 8px / 6px 2px repeat-x;
+}
+
+/* Thin double-line border */
+.sadu-rule {
+  height: 6px;
+  background:
+    linear-gradient(var(--sadu-brown), var(--sadu-brown)) 0 0 / 100% 1px no-repeat,
+    linear-gradient(var(--sadu-brown), var(--sadu-brown)) 0 5px / 100% 1px no-repeat;
+}
+
+/* Background palm-tree-ish pattern using simple shapes */
+.bg-heritage {
+  background-color: var(--vanilla);
+  /* faint warm tint only — no yellow flood */
+  background-image:
+    radial-gradient(circle at 8% 12%, rgba(168,117,74,0.10) 0 6px, transparent 7px),
+    radial-gradient(circle at 28% 42%, rgba(168,117,74,0.08) 0 4px, transparent 5px),
+    radial-gradient(circle at 72% 22%, rgba(168,117,74,0.09) 0 5px, transparent 6px),
+    radial-gradient(circle at 88% 68%, rgba(168,117,74,0.07) 0 3px, transparent 4px),
+    radial-gradient(circle at 18% 78%, rgba(168,117,74,0.10) 0 5px, transparent 6px),
+    radial-gradient(circle at 55% 88%, rgba(168,117,74,0.06) 0 3px, transparent 4px);
+}
+
+/* Triangle row (the "tents" motif from caravan imagery) */
+.tri-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 10px;
+}
+.tri-row::before, .tri-row::after, .tri-row span {
+  content: "";
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 8px solid var(--sadu-brown);
+  display: inline-block;
+}
+
+/* Diamond (kilim) row */
+.diamond-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.diamond-row > i {
+  width: 8px; height: 8px; transform: rotate(45deg);
+  background: var(--sadu-brown);
+  display: inline-block;
+}
+.diamond-row > i.red { background: var(--najdi-red); }
+.diamond-row > i.green { background: var(--green); }
+
+/* Card shapes */
+.card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(27,52,36,0.08);
+  box-shadow: 0 1px 0 rgba(27,52,36,0.04);
+}
+.card-cream {
+  background: var(--vanilla-soft);
+  border-radius: 18px;
+  border: 1px solid rgba(168,117,74,0.18);
+}
+.card-green {
+  background: var(--green);
+  color: var(--cream);
+  border-radius: 22px;
+  position: relative;
+  overflow: hidden;
+}
+.card-green-deep {
+  background: var(--green-deep);
+  color: var(--cream);
+  border-radius: 18px;
+}
+
+/* Buttons */
+.btn {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--green);
+  color: var(--cream);
+}
+.btn-primary:hover { background: var(--green-deep); }
+.btn-outline {
+  background: transparent;
+  color: var(--green);
+  border: 1.5px solid var(--green);
+}
+.btn-cream {
+  background: var(--cream);
+  color: var(--green);
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 999px;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+.badge-paid { background: rgba(27,52,36,0.10); color: var(--green); }
+.badge-late { background: rgba(158,43,37,0.12); color: var(--najdi-red); }
+.badge-pending { background: rgba(168,117,74,0.15); color: var(--sadu-brown); }
+.badge-cream-on-green { background: rgba(255,239,179,0.16); color: var(--cream); }
+
+/* small pulsing dot for the merged "live" AI section header */
+.live-now-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block;
+  animation: live-now-pulse 1.6s infinite;
+}
+@keyframes live-now-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(27,52,36,0.45); }
+  70% { box-shadow: 0 0 0 6px rgba(27,52,36,0); }
+  100% { box-shadow: 0 0 0 0 rgba(27,52,36,0); }
+}
+
+/* Hide scrollbars on inner scrollers */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Screen transitions */
+.screen-enter {
+  animation: screenIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress shimmer */
+.progress-fill {
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,239,179,0.35), transparent);
+  animation: shimmer 2.4s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Toast */
+.toast {
+  position: absolute;
+  bottom: 110px; left: 16px; right: 16px;
+  background: var(--green);
+  color: var(--cream);
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 200;
+  animation: toastIn 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom sheet */
+.sheet-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(13,30,21,0.55);
+  z-index: 150;
+  animation: fadeIn 0.2s ease;
+}
+.sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--vanilla);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 18px 30px;
+  z-index: 160;
+  animation: sheetIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-height: 80%;
+  overflow-y: auto;
+}
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: rgba(27,52,36,0.18);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+/* AI sparkle bg */
+.ai-card {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
+  color: var(--cream);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+}
