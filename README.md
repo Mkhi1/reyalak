@@ -10,7 +10,7 @@ A Saudi personal-finance and savings prototype — iPhone-framed, RTL Arabic, da
 - **بدائل (Alternatives)** — cheaper ways to spend, both nearby merchant swaps (shown on a map) and budget/behavior changes (subscriptions, cooking at home)
 - **التحليل (Analysis)** — 12-month spending breakdown, category budgets, recent transactions
 - **الأهداف (Goals)** — savings goals with progress tracking, plus a full AI-generated month-by-month savings schedule that adapts to real seasonal spending patterns
-- **الجمعية (Jam'iya)** — a traditional Gulf group-savings circle tracker
+
 - **المساعد الذكي (AI Assistant)** — a chat assistant grounded in your real data, powered by Groq (Llama 3.3 70B)
 
 All financial data is synthetic/seeded — no real bank, merchant, or place names are used anywhere in the app.
