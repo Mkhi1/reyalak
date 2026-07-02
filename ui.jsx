@@ -1,4 +1,4 @@
-// ui.jsx — shared components for وفّر app
+// ui.jsx — shared components for ريالك app
 // Heritage: Sadu pattern strips (simple triangles/diamonds), avatars (initials),
 // progress bars, donut chart, line chart, badges, bottom-nav, etc.
 
@@ -419,7 +419,7 @@ function BottomNav({ active, onChange }) {
   const tabs = [
     { id: 'home', label: 'الرئيسية', icon: Icon.home },
     { id: 'analysis', label: 'التحليل', icon: Icon.chart },
-    { id: 'map', label: 'الخريطة', icon: Icon.map },
+    { id: 'map', label: 'بدائل', icon: Icon.map },
     { id: 'goals', label: 'الأهداف', icon: Icon.target },
     { id: 'ai-chat', label: 'المساعد', icon: Icon.chat },
   ];
@@ -518,24 +518,25 @@ function SectionTitle({ children, action, hint }) {
 }
 
 // ─────────── Wordmark (logo) ───────────
-function Wordmark({ size = 32, color = 'var(--green)' }) {
+// logo.png is a calligraphic وفّر mark (kept as-is from the app's earlier
+// name — no calligraphy asset exists for ريالك yet) with a transparent
+// background, safe to use directly on any surface, light or dark.
+const LOGO_ASPECT = 1384 / 813;
+function Wordmark({ size = 32 }) {
   return (
-    <div className="wordmark" style={{
-      fontSize: size, color, lineHeight: 1, fontWeight: 800,
-      display: 'inline-flex', alignItems: 'baseline', gap: 4,
-    }}>
-      <span>وفّر</span>
-      <span style={{
-        width: 7, height: 7, borderRadius: '50%',
-        background: 'var(--najdi-red)', display: 'inline-block',
-        transform: 'translateY(-4px)',
-      }} />
-    </div>
+    <img src="logo.png" alt="وفّر" style={{
+      height: size, width: size * LOGO_ASPECT, objectFit: 'contain', display: 'inline-block',
+    }} />
   );
 }
+
+// Maps the icon_key strings the backend sends for goals (e.g. 'hajj', 'car2')
+// to the actual Icon.* components — goals used to carry a literal component
+// reference in local mock arrays; now they carry a string key over JSON.
+const GOAL_ICONS = { hajj: Icon.hajj, car2: Icon.car2, ring: Icon.ring, laptop: Icon.laptop, target: Icon.target };
 
 Object.assign(window, {
   Icon, Avatar, SaduStrip, LinearProgress, CircularProgress,
   StackedBar, Donut, LineChart, BottomNav, TopHeader, SectionTitle, Wordmark,
-  toArabicDigits, fmt, AR_DIGITS,
+  toArabicDigits, fmt, AR_DIGITS, GOAL_ICONS,
 });

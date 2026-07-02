@@ -11,6 +11,16 @@ function App() {
   const [sheet, setSheet] = useState(null);
   const [toast, setToast] = useState(null);
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  const [dataState, setDataState] = useState('loading'); // 'loading' | 'ready' | 'error'
+
+  const loadData = () => {
+    setDataState('loading');
+    window.loadWafferData()
+      .then(() => setDataState('ready'))
+      .catch(() => setDataState('error'));
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -45,14 +55,8 @@ function App() {
     }}>
       {/* Top branding tag for the canvas */}
       <div style={{ textAlign: 'center', color: 'var(--cream)', fontFamily: 'Rubik, sans-serif' }}>
-        <div className="wordmark" style={{ fontSize: 36, color: 'var(--cream)' }}>
-          وفّر
-          <span style={{
-            display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-            background: 'var(--najdi-red)', marginInlineStart: 4, transform: 'translateY(-6px)',
-          }} />
-        </div>
-        <div style={{ fontSize: 13, color: 'rgba(255,239,179,0.6)', marginTop: 4, fontFamily: 'IBM Plex Sans Arabic, sans-serif' }}>
+        <Wordmark size={44} />
+        <div style={{ fontSize: 13, color: 'rgba(255,239,179,0.6)', marginTop: 10, fontFamily: 'IBM Plex Sans Arabic, sans-serif' }}>
           مدّخر ذكي سعودي · هاكاثون prototype
         </div>
         {/* tabs to jump between screens */}
@@ -66,7 +70,7 @@ function App() {
             { id: 'home', label: 'الرئيسية' },
             { id: 'analysis', label: 'التحليل' },
             { id: 'ai-chat', label: 'المساعد 💬' },
-            { id: 'map', label: 'الخريطة' },
+            { id: 'map', label: 'بدائل' },
             { id: 'goals', label: 'الأهداف' },
           ].map(t => (
             <button key={t.id} onClick={() => goto(t.id)} style={{
@@ -95,13 +99,18 @@ function App() {
             height: 'calc(100% - 54px)', overflowY: 'auto', overflowX: 'hidden',
             position: 'relative',
           }}>
-            {screen === 'home' && <HomeScreen goto={goto} openSheet={openSheet} />}
-            {screen === 'analysis' && <AnalysisScreen goto={goto} />}
-            {screen === 'map' && <MapScreen goto={goto} openSheet={openSheet} />}
-            {screen === 'goals' && <GoalsScreen goto={goto} openSheet={openSheet} />}
-            {screen === 'ai-chat' && <AIChatScreen goto={goto} />}
-            {screen === 'jamiya' && <JamiyaScreen goto={goto} openSheet={openSheet} />}
             {screen === 'onboarding' && <OnboardingScreen goto={goto} />}
+            {screen !== 'onboarding' && dataState === 'loading' && <DataLoadingState />}
+            {screen !== 'onboarding' && dataState === 'error' && <DataErrorState onRetry={loadData} />}
+            {screen !== 'onboarding' && dataState === 'ready' && <>
+              {screen === 'home' && <HomeScreen goto={goto} openSheet={openSheet} />}
+              {screen === 'analysis' && <AnalysisScreen goto={goto} />}
+              {screen === 'map' && <MapScreen goto={goto} />}
+              {screen === 'goals' && <GoalsScreen goto={goto} openSheet={openSheet} />}
+              {screen === 'ai-chat' && <AIChatScreen goto={goto} />}
+              {screen === 'jamiya' && <JamiyaScreen goto={goto} openSheet={openSheet} />}
+              {screen === 'goal-plan' && <GoalPlanScreen goto={goto} />}
+            </>}
           </div>
 
           {/* Bottom nav (not on onboarding) */}
@@ -126,6 +135,60 @@ function App() {
         ↑ تنقّل بين الشاشات من شريط التبويب فوق، أو من شريط التنقّل أسفل الجهاز.
         البيانات تجريبية للهاكاثون.
       </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════
+// Data loading / error states — shown while the backend bootstrap fetch is
+// in flight, or if the server can't be reached.
+// ═════════════════════════════════════════════════════════
+function DataLoadingState() {
+  return (
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16,
+      fontFamily: 'IBM Plex Sans Arabic, sans-serif',
+    }}>
+      <div style={{
+        width: 60, height: 60, borderRadius: '50%',
+        background: 'var(--green)', color: 'var(--cream)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <Icon.sparkle size={24} />
+        <div style={{
+          position: 'absolute', inset: -6, borderRadius: '50%',
+          border: '3px solid var(--sadu-brown)',
+          borderTopColor: 'transparent', borderRightColor: 'transparent',
+          animation: 'wafferSpin 1.1s linear infinite',
+        }} />
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>جاري تحميل بياناتك...</div>
+      <style>{`@keyframes wafferSpin { from { transform: rotate(0); } to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function DataErrorState({ onRetry }) {
+  return (
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 14, padding: '0 30px',
+      fontFamily: 'IBM Plex Sans Arabic, sans-serif', textAlign: 'center',
+    }}>
+      <div style={{
+        width: 56, height: 56, borderRadius: '50%',
+        background: 'var(--najdi-red)', color: 'var(--cream)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}><Icon.bolt size={24} /></div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--green)' }}>تعذّر الاتصال بالخادم</div>
+      <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+        تأكد إن سيرفر ريالك شغّال (npm start داخل مجلد server)، ثم حاول مرة ثانية.
+      </div>
+      <button onClick={onRetry} className="btn btn-primary" style={{ marginTop: 6, padding: '10px 22px' }}>
+        إعادة المحاولة
+      </button>
     </div>
   );
 }
@@ -182,12 +245,18 @@ function NotifSheet() {
 
 function PaySheet({ close, showToast }) {
   const [confirming, setConfirming] = useState(false);
-  const handlePay = () => {
+  const handlePay = async () => {
     setConfirming(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/jamiya/pay', { method: 'POST' });
+      if (!res.ok) throw new Error('pay failed');
+      window.JAMIYA = await res.json();
       close();
       showToast('تم الدفع بنجاح — جمعية الشلّة');
-    }, 900);
+    } catch (e) {
+      setConfirming(false);
+      showToast('تعذّر إتمام الدفع، حاول مرة ثانية');
+    }
   };
   return (
     <div>
@@ -199,7 +268,7 @@ function PaySheet({ close, showToast }) {
         <div className="num" style={{ fontSize: 40, fontWeight: 800, color: 'var(--cream)', lineHeight: 1.1 }}>
           {fmt(1000)} <span style={{ fontSize: 14, color: 'rgba(255,239,179,0.5)' }}>{SAR}</span>
         </div>
-        <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,239,179,0.7)' }}>سيتم خصمه من <strong>الراجحي ××٤٤٢١</strong></div>
+        <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,239,179,0.7)' }}>سيتم خصمه من <strong>بنك أ ××٤٤٢١</strong></div>
       </div>
 
       <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
@@ -216,7 +285,32 @@ function NewGoalSheet({ close, showToast }) {
   const [amount, setAmount] = useState(15000);
   const [monthly, setMonthly] = useState(1000);
   const [title, setTitle] = useState('');
+  const [saving, setSaving] = useState(false);
   const months = Math.ceil(amount / monthly);
+
+  const handleCreate = async () => {
+    if (!title.trim() || saving) {
+      if (!title.trim()) showToast('اكتب اسم الهدف أولاً');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), targetAmount: amount, monthlyContribution: monthly }),
+      });
+      if (!res.ok) throw new Error('create failed');
+      const created = await res.json();
+      window.GOALS = [...(window.GOALS || []), created];
+      close();
+      showToast('تم إنشاء الهدف!');
+    } catch (e) {
+      setSaving(false);
+      showToast('تعذّر إنشاء الهدف، حاول مرة ثانية');
+    }
+  };
+
   return (
     <div>
       <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--green)', marginBottom: 6, fontFamily: 'Rubik, sans-serif' }}>هدف جديد</div>
@@ -270,7 +364,9 @@ function NewGoalSheet({ close, showToast }) {
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button onClick={close} className="btn btn-outline" style={{ flex: 1 }}>إلغاء</button>
-        <button onClick={() => { close(); showToast('تم إنشاء الهدف!'); }} className="btn btn-primary" style={{ flex: 2 }}>إنشاء الهدف</button>
+        <button onClick={handleCreate} className="btn btn-primary" style={{ flex: 2 }}>
+          {saving ? 'جارٍ الإنشاء...' : 'إنشاء الهدف'}
+        </button>
       </div>
     </div>
   );

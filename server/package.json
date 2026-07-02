@@ -1,0 +1,18 @@
+{
+  "name": "waffer-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend for the Waffer (وفّر) savings app prototype",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

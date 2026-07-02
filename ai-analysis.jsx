@@ -62,23 +62,6 @@ function aiSummaryText(a) {
   return `حلّلت إنفاقك آخر ١٢ شهر: إجمالي ${fmt(a.grandTotal)} ${SAR}، بمعدّل ${fmt(Math.round(a.avgMonthly))} شهرياً. أعلى شهر صرف كان ${a.maxMonth.month} بفارق ${toArabicDigits(Math.abs(a.maxDeltaPct))}٪ عن معدّلك، وأكبر باب صرف عندك هو ${a.topCat.label}.`;
 }
 
-// ─────────── merged + deduped alternatives list ───────────
-function useAlternatives(a) {
-  return useMemoAI(() => {
-    const budgetAlts = window.SAVING_ALTS.map(alt => ({
-      ...alt,
-      type: alt.type || 'budget_match',
-      matched: a.overCats.some(c => c.id === alt.cat),
-    }));
-    const nearbyAlts = window.MERCHANT_MAP_ALTS.map(m => ({
-      id: m.id, cat: m.cat, type: m.type || 'nearby',
-      from: m.match, to: m.alt, dist: m.dist, save: m.save, period: 'بالزيارة',
-      matched: false,
-    }));
-    return [...budgetAlts, ...nearbyAlts].sort((x, y) => (y.matched ? 1 : 0) - (x.matched ? 1 : 0));
-  }, [a]);
-}
-
 // ─────────── density switch — controls the whole page ───────────
 function useDensity() {
   const [level, setLevelState] = useStateAI(() => {
@@ -187,7 +170,7 @@ function AIInsightCard({ a, adjActive, undone, onDismiss, onUndo }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}><Icon.sparkle size={16} /></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--green)' }}>عدّل وفّر خطتك تلقائيًا الآن</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--green)' }}>عدّل ريالك خطتك تلقائيًا الآن</div>
             <div style={{ fontSize: 12, color: 'var(--ink)', marginTop: 4, lineHeight: 1.6 }}>
               لاحظنا إنك قريب من حدّ <strong>{a.overCats[0] ? a.overCats[0].label : 'مطاعم وكافيهات'}</strong> أسرع من المتوقع هالشهر — نقلنا <strong className="num">٥٠</strong> {SAR} من ميزانية <strong>أخرى</strong> (متوفّرة عندك) إليها، بدون ما تطلب.
             </div>
@@ -206,7 +189,7 @@ function AIInsightCard({ a, adjActive, undone, onDismiss, onUndo }) {
         <AIOrb score={a.score} color={a.verdictColor === 'var(--najdi-red)' ? '#E8847E' : (a.verdictColor === 'var(--sadu-brown)' ? '#D8A87A' : 'var(--cream)')} size={84} />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,239,179,0.14)', padding: '3px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700 }}>
-            <Icon.sparkle size={10} /> تقييم وفّر الذكي
+            <Icon.sparkle size={10} /> تقييم ريالك الذكي
           </div>
           <div style={{ fontSize: 17, fontWeight: 800, marginTop: 7 }}>{a.verdict}</div>
           <div style={{ fontSize: 11, color: 'rgba(255,239,179,0.75)', marginTop: 4, lineHeight: 1.5 }}>
@@ -262,51 +245,7 @@ function GoalSlider({ goal, setGoal }) {
       </div>
       <input type="range" min="300" max="3500" step="50" value={goal} onChange={e => setGoal(+e.target.value)}
         style={{ width: '100%', marginTop: 10, accentColor: 'var(--green)' }} />
-      <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 6 }}>حرّك السلايدر، ووفّر يعيد توزيع ميزانية فئاتك تلقائيًا عشان توصل لهذا الهدف.</div>
-    </div>
-  );
-}
-
-// ─────────── unified "بدائل أوفر لك" card — one shape, badge varies ───────────
-function AltCard({ alt }) {
-  const showBudgetBadge = alt.type === 'budget_match' && alt.matched;
-  return (
-    <div className="card" style={{ padding: 14, marginBottom: 10, position: 'relative', border: showBudgetBadge ? '1.5px solid rgba(27,52,36,0.25)' : undefined }}>
-      {showBudgetBadge && (
-        <div style={{
-          position: 'absolute', top: -9, right: 14,
-          background: 'var(--green)', color: 'var(--cream)',
-          fontSize: 9.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-          display: 'inline-flex', alignItems: 'center', gap: 3,
-        }}><Icon.sparkle size={9} /> يطابق فئة فوق ميزانيتك</div>
-      )}
-      {alt.type === 'nearby' && alt.dist !== '—' && (
-        <div style={{
-          position: 'absolute', top: -9, right: 14,
-          background: 'var(--sadu-brown)', color: 'var(--cream)',
-          fontSize: 9.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-          display: 'inline-flex', alignItems: 'center', gap: 3,
-        }}><Icon.pin size={9} /> {alt.dist}</div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 10, alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 9, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>الحالي</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', marginTop: 2 }}>{alt.from}</div>
-          {alt.fromAmt != null && <div className="num" style={{ fontSize: 13, color: 'var(--najdi-red)', fontWeight: 700, marginTop: 4 }}>{fmt(alt.fromAmt)} {SAR}</div>}
-        </div>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--vanilla)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sadu-brown)' }}>
-          <Icon.arrowLeft size={14} />
-        </div>
-        <div>
-          <div style={{ fontSize: 9, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>البديل</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', marginTop: 2 }}>{alt.to}</div>
-          {alt.toAmt != null && <div className="num" style={{ fontSize: 13, color: 'var(--green)', fontWeight: 700, marginTop: 4 }}>{fmt(alt.toAmt)} {SAR}</div>}
-        </div>
-      </div>
-      <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed rgba(168,117,74,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>توفير متوقع {alt.period}</div>
-        <div className="num" style={{ background: 'var(--green)', color: 'var(--cream)', padding: '4px 10px', borderRadius: 8, fontWeight: 700, fontSize: 12 }}>+{fmt(alt.save)} {SAR}</div>
-      </div>
+      <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 6 }}>حرّك السلايدر، وريالك يعيد توزيع ميزانية فئاتك تلقائيًا عشان توصل لهذا الهدف.</div>
     </div>
   );
 }
@@ -425,7 +364,6 @@ function RecentTransactions() {
 // ═════════════════════════════════════════════════════════
 function AnalysisScreen({ goto }) {
   const a = useAnalysis();
-  const alternatives = useAlternatives(a);
   const [density, setDensity] = useDensity();
   const [adjVisible, setAdjVisible] = useStateAI(true);
   const [undone, setUndone] = useStateAI(false);
@@ -494,18 +432,6 @@ function AnalysisScreen({ goto }) {
             </div>
 
             <GoalSlider goal={goal} setGoal={setGoal} />
-
-            <div>
-              <SectionTitle hint="بدّل واستفد — وفّر يقترح لك" action={density === 'standard' ? 'عرض الكل' : undefined}>بدائل أوفر لك</SectionTitle>
-              {(density === 'standard' ? alternatives.slice(0, 2) : alternatives).map(alt => <AltCard key={alt.id} alt={alt} />)}
-              {density === 'standard' && (
-                <button onClick={() => setDensity('full')} className="btn" style={{
-                  width: '100%', background: 'rgba(27,52,36,0.06)', color: 'var(--green)',
-                  borderRadius: 12, padding: '10px', fontSize: 12, fontWeight: 700,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}>عرض الكل ({toArabicDigits(alternatives.length)}) <Icon.arrowLeft size={13} /></button>
-              )}
-            </div>
           </>
         )}
 
@@ -523,5 +449,5 @@ function AnalysisScreen({ goto }) {
 
 Object.assign(window, {
   AnalysisScreen, useAnalysis, aiSummaryText,
-  AIOrb, MonthlyChart, MonthDetail, CategoryBudgetRow, AltCard,
+  AIOrb, MonthlyChart, MonthDetail, CategoryBudgetRow,
 });

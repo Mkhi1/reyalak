@@ -55,13 +55,6 @@ html, body {
 }
 .waffer-app::-webkit-scrollbar { width: 0; }
 
-/* The display wordmark */
-.wordmark {
-  font-family: 'Rubik', sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
 .num {
   font-family: 'Rubik', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;

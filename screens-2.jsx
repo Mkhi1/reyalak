@@ -4,13 +4,9 @@
 // GOALS
 // ═════════════════════════════════════════════════════════
 function GoalsScreen({ goto, openSheet }) {
-  const goals = [
-    { id: 'hajj', title: 'رحلة العمرة ١٤٤٧', saved: 14750, target: 25000, monthly: 1200, months: 4, icon: Icon.hajj, accent: '#1B3424', tag: 'الهدف الرئيسي' },
-    { id: 'car',  title: 'دفعة أولى — سيّارة', saved: 6800, target: 18000, monthly: 850, months: 13, icon: Icon.car2, accent: '#A8754A' },
-    { id: 'wed',  title: 'صندوق الزواج', saved: 22000, target: 80000, monthly: 1500, months: 39, icon: Icon.ring, accent: '#9E2B25' },
-    { id: 'mac',  title: 'لابتوب جديد', saved: 4200, target: 7500, monthly: 500, months: 7, icon: Icon.laptop, accent: '#898F65' },
-  ];
-  const mainGoal = goals[0];
+  const goals = window.GOALS.map(g => ({ ...g, IconComp: window.GOAL_ICONS[g.icon] || Icon.target }));
+  const mainGoal = goals.find(g => g.tag) || goals[0];
+  const restGoals = goals.filter(g => g.id !== mainGoal.id);
 
   return (
     <div className="screen-enter" style={{ paddingBottom: 130 }}>
@@ -75,7 +71,7 @@ function GoalsScreen({ goto, openSheet }) {
             <div style={{ width: 1, background: 'rgba(255,239,179,0.14)' }} />
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,239,179,0.65)' }}>متبقّي</div>
-              <div className="num" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cream)' }}>٤ أشهر</div>
+              <div className="num" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cream)' }}>{toArabicDigits(mainGoal.months)} {mainGoal.months > 10 ? 'شهر' : 'أشهر'}</div>
             </div>
           </div>
         </div>
@@ -120,7 +116,7 @@ function GoalsScreen({ goto, openSheet }) {
       {/* All goals list */}
       <div style={{ padding: '18px 16px 0' }}>
         <SectionTitle action={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon.plus size={12} /> هدف جديد</span>}>كل أهدافك</SectionTitle>
-        {goals.slice(1).map((g) => {
+        {restGoals.map((g) => {
           const pct = Math.round(g.saved/g.target*100);
           return (
             <div key={g.id} className="card" style={{ padding: 14, marginBottom: 10, position: 'relative', overflow: 'hidden' }}>
@@ -135,7 +131,7 @@ function GoalsScreen({ goto, openSheet }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <g.icon size={22} />
+                  <g.IconComp size={22} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -176,23 +172,17 @@ function GoalsScreen({ goto, openSheet }) {
 // JAM'IYA — Group savings
 // ═════════════════════════════════════════════════════════
 function JamiyaScreen({ goto, openSheet }) {
-  const members = [
-    { name: 'ف', full: 'فيصل (أنت)', tone: 0, status: 'paid', month: 'ديسمبر', order: 5, isMe: true },
-    { name: 'م', full: 'محمد العتيبي', tone: 1, status: 'paid', month: 'نوفمبر', order: 4 },
-    { name: 'س', full: 'سلطان القحطاني', tone: 2, status: 'paid', month: 'أكتوبر', order: 3 },
-    { name: 'ن', full: 'نواف الحربي', tone: 3, status: 'paid', month: 'سبتمبر', order: 2 },
-    { name: 'ع', full: 'عبدالله الزهراني', tone: 4, status: 'paid', month: 'أغسطس', order: 1 },
-    { name: 'خ', full: 'خالد العنزي', tone: 5, status: 'pending', month: 'يناير', order: 6 },
-    { name: 'ت', full: 'تركي السبيعي', tone: 1, status: 'late', month: 'فبراير', order: 7 },
-    { name: 'ر', full: 'راكان الدوسري', tone: 2, status: 'pending', month: 'مارس', order: 8 },
-  ];
+  const jamiya = window.JAMIYA;
+  const members = jamiya.members;
+  const myTurn = members.find(m => m.isMe);
+  const perMember = Math.round(jamiya.monthlyAmount / jamiya.memberCount);
 
   return (
     <div className="screen-enter" style={{ paddingBottom: 130 }}>
       <div style={{ padding: '18px 18px 8px' }}>
         <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 500 }}>الجمعية الرقمية</div>
         <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)', fontFamily: 'Rubik, sans-serif', marginTop: 2 }}>
-          جمعية الشلّة 🌴
+          {jamiya.name}
         </div>
       </div>
 
@@ -208,11 +198,11 @@ function JamiyaScreen({ goto, openSheet }) {
             <div>
               <div style={{ fontSize: 11, color: 'rgba(255,239,179,0.65)' }}>إجمالي المبلغ الشهري</div>
               <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <div className="num" style={{ fontSize: 38, fontWeight: 800, color: 'var(--cream)', lineHeight: 1 }}>{fmt(8000)}</div>
+                <div className="num" style={{ fontSize: 38, fontWeight: 800, color: 'var(--cream)', lineHeight: 1 }}>{fmt(jamiya.monthlyAmount)}</div>
                 <div style={{ fontSize: 14, color: 'rgba(255,239,179,0.6)' }}>{SAR}</div>
               </div>
               <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,239,179,0.7)' }}>
-                <span className="num">١٠٠٠</span> {SAR} × <span className="num">٨</span> أعضاء
+                <span className="num">{toArabicDigits(perMember)}</span> {SAR} × <span className="num">{toArabicDigits(jamiya.memberCount)}</span> أعضاء
               </div>
             </div>
             <div style={{
@@ -229,22 +219,22 @@ function JamiyaScreen({ goto, openSheet }) {
           <div style={{ marginTop: 18, padding: 12, background: 'rgba(255,239,179,0.10)', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,239,179,0.7)' }}>
               <span>الدورة الحالية</span>
-              <span><span className="num">٥</span> من <span className="num">٨</span></span>
+              <span><span className="num">{toArabicDigits(jamiya.currentRound)}</span> من <span className="num">{toArabicDigits(jamiya.memberCount)}</span></span>
             </div>
             <div style={{ marginTop: 8 }}>
-              <LinearProgress value={5} total={8} height={6} color="var(--cream)" track="rgba(255,239,179,0.14)" />
+              <LinearProgress value={jamiya.currentRound} total={jamiya.memberCount} height={6} color="var(--cream)" track="rgba(255,239,179,0.14)" />
             </div>
             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,239,179,0.65)' }}>دورك القادم</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,239,179,0.65)' }}>دورك</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cream)' }}>
-                ديسمبر <span className="num">٢٠٢٦</span> <span style={{ color: 'rgba(255,239,179,0.5)' }}>(الترتيب ٥)</span>
+                <span className="num">{myTurn.month}</span> <span style={{ color: 'rgba(255,239,179,0.5)' }}>(الترتيب {toArabicDigits(myTurn.order)})</span>
               </div>
             </div>
           </div>
 
           <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
             <button onClick={() => openSheet('pay')} className="btn btn-cream" style={{ flex: 1, fontSize: 13, padding: '12px' }}>
-              ادفع دفعتك ({toArabicDigits(1000)} {SAR})
+              ادفع دفعتك ({toArabicDigits(perMember)} {SAR})
             </button>
             <button style={{
               padding: 12, background: 'rgba(255,239,179,0.14)',
@@ -278,12 +268,12 @@ function JamiyaScreen({ goto, openSheet }) {
       {/* Members list */}
       <div style={{ padding: '18px 16px 0' }}>
         <SectionTitle hint="حسب ترتيب الاستلام" action={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon.plus size={12} /> دعوة</span>}>
-          الأعضاء ({toArabicDigits(8)})
+          الأعضاء ({toArabicDigits(jamiya.memberCount)})
         </SectionTitle>
 
         <div className="card" style={{ padding: '4px 0', overflow: 'hidden' }}>
           {members.map((m, i) => {
-            const isNext = m.order === 6;
+            const isNext = m.order === jamiya.currentRound + 1;
             return (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
@@ -386,7 +376,7 @@ function OnboardingScreen({ goto }) {
                   <span style={{ background: 'var(--green)', color: 'var(--cream)', padding: '1px 6px', borderRadius: 5, fontSize: 9, fontWeight: 700 }}>موصى به</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4, lineHeight: 1.5 }}>
-                  عبر الخدمات المصرفية المفتوحة (ساما) — تحليل لحظي
+                  عبر الخدمات المصرفية المفتوحة — تحليل لحظي
                 </div>
               </div>
               <Icon.chevron size={16} />
@@ -397,7 +387,7 @@ function OnboardingScreen({ goto }) {
               borderTop: '1px dashed rgba(168,117,74,0.25)',
               display: 'flex', gap: 6, flexWrap: 'wrap',
             }}>
-              {['الراجحي','الأهلي','SAB','الرياض','الإنماء','+'].map((b, i) => (
+              {['بنك أ'].map((b, i) => (
                 <div key={i} style={{
                   padding: '4px 10px', borderRadius: 8,
                   background: 'var(--vanilla)', color: 'var(--green)',
@@ -425,7 +415,7 @@ function OnboardingScreen({ goto }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>ارفع كشف حساب PDF</div>
                 <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4, lineHeight: 1.5 }}>
-                  جرّب وفّر بدون ربط — يكفي كشف آخر ٣ أشهر
+                  جرّب ريالك بدون ربط — يكفي كشف آخر ٣ أشهر
                 </div>
               </div>
               <Icon.chevron size={16} />
@@ -441,7 +431,7 @@ function OnboardingScreen({ goto }) {
           }}>
             <div style={{ color: 'var(--green)', flexShrink: 0 }}><Icon.shield size={18} /></div>
             <div style={{ fontSize: 11, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-              بياناتك مشفّرة ومحمية بمعايير ساما. لن نشاركها مع أي طرف ثالث.
+              بياناتك مشفّرة ومحمية وفق أعلى معايير الأمان المصرفي. لن نشاركها مع أي طرف ثالث.
             </div>
           </div>
 

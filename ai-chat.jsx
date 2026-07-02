@@ -1,11 +1,10 @@
-// ai-chat.jsx — "المساعد الذكي": a real, free-form chat with Claude, grounded
-// in وفّر's mock financial data (12-month spend, budgets, alternatives, the
-// user's current goal, and their jam'iya group) so it can answer questions
-// about spending/bills, give savings coaching, or talk about goals/jam'iya.
-// Uses the built-in window.claude.complete helper — no API key required.
+// ai-chat.jsx — "المساعد الذكي": a real, free-form chat grounded in ريالك's
+// real (backend-served) financial data. Calls POST /api/chat — the server
+// builds the system prompt from live DB data and proxies to the configured
+// LLM provider (see server/.env for GROQ_API_KEY).
 // Layout/interaction modeled after Claude's own chat UI (plain assistant
 // text, tinted user bubble, growing composer, live word-reveal on reply) —
-// but in وفّر's own warm palette, not Claude's colors.
+// but in ريالك's own warm palette, not Claude's colors.
 
 const { useState: useStateChat, useEffect: useEffectChat, useRef: useRefChat } = React;
 
@@ -18,42 +17,6 @@ const QUICK_QUESTIONS = [
   'متى بوصل لهدف العمرة؟',
   'أخبرني عن دوري في الجمعية',
 ];
-
-// Mock context not exported elsewhere (home screen + jam'iya screen numbers),
-// kept here so the assistant can reason about goals/jam'iya too.
-const GOAL_CONTEXT = { name: 'رحلة العمرة ١٤٤٧', saved: 14750, target: 25000, monthsLeft: 4 };
-const JAMIYA_CONTEXT = { name: 'جمعية الشلّة', members: 8, turnOrder: 'الشهر القادم', amount: 8000 };
-
-function buildSystemPrompt(a) {
-  const catLines = a.catStats.map(c =>
-    `${c.label}: متوسط ${Math.round(c.avg)} ${SAR_CHAT}/شهر (ميزانية ${c.budget} ${SAR_CHAT})${c.over ? ' — متجاوز' : ' — ضمن الميزانية'}`
-  ).join('\n');
-
-  const altLines = window.SAVING_ALTS.map(alt =>
-    `- بدّل "${alt.from}" (${alt.fromAmt} ${SAR_CHAT}) بـ "${alt.to}" (${alt.toAmt} ${SAR_CHAT}) ← يوفّر ${alt.save} ${SAR_CHAT} بالشهر`
-  ).join('\n');
-
-  return `أنت "المساعد الذكي" داخل تطبيق وفّر — تطبيق سعودي للادخار وتحليل المصاريف. تتكلم عربي بأسلوب ودود وواضح (لهجة خليجية خفيفة مقبولة)، وإجاباتك مختصرة (٢-٤ جمل عادة) إلا إذا طلب المستخدم تفصيل أكثر. لا تستخدم markdown ولا نجوم؛ فقرات عادية فقط. اكتب الأرقام بالأرقام الهندية (١٢٣...) لأن كل أرقام التطبيق بهالشكل.
-
-بيانات المستخدم (كلها بيانات تجريبية/وهمية لغرض العرض التوضيحي — تعامل معها كأنها حقيقية عند الإجابة):
-
-إجمالي صرفه آخر ١٢ شهر: ${Math.round(a.grandTotal)} ${SAR_CHAT}، بمعدّل ${Math.round(a.avgMonthly)} ${SAR_CHAT} شهرياً.
-أعلى شهر صرف: ${a.maxMonth.month} (${a.maxMonth.total} ${SAR_CHAT})${a.maxMonth.note ? ' — ' + a.maxMonth.note : ''}.
-أكبر باب صرف: ${a.topCat.label}.
-تقييم وفّر الذكي لعاداته: ${a.score}/100 (${a.verdict}).
-
-الصرف حسب الفئة (متوسط شهري مقابل الميزانية):
-${catLines}
-
-بدائل توفير مقترحة:
-${altLines}
-
-هدفه الحالي: "${GOAL_CONTEXT.name}" — جمع ${GOAL_CONTEXT.saved} من أصل ${GOAL_CONTEXT.target} ${SAR_CHAT}، وباقي له ${GOAL_CONTEXT.monthsLeft} أشهر تقريباً.
-
-جمعيته: "${JAMIYA_CONTEXT.name}" — ${JAMIYA_CONTEXT.members} أعضاء، دوره ${JAMIYA_CONTEXT.turnOrder}، والقيمة الشهرية ${JAMIYA_CONTEXT.amount} ${SAR_CHAT}.
-
-أجب فقط بناءً على هذي البيانات. إذا سأل عن شي مو موجود بالبيانات، وضّح إنه مو متوفر بدل ما تختلق رقم.`;
-}
 
 function TypingDots() {
   return (
@@ -102,13 +65,12 @@ function UserTurn({ content }) {
 }
 
 function AIChatScreen({ goto }) {
-  const a = window.useAnalysis();
   const [messages, setMessages] = useStateChat(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || 'null');
       if (saved && saved.length) return saved;
     } catch (e) { /* ignore */ }
-    return [{ role: 'assistant', content: 'هلا! أنا مساعدك الذكي في وفّر 👋\nأقدر أجاوبك على أسئلة عن مصروفك، أهدافك، أو جمعيتك. جرّب تسألني شي.' }];
+    return [{ role: 'assistant', content: 'هلا! أنا مساعدك الذكي في ريالك 👋\nأقدر أجاوبك على أسئلة عن مصروفك، أهدافك، أو جمعيتك. جرّب تسألني شي.' }];
   });
   const [input, setInput] = useStateChat('');
   const [loading, setLoading] = useStateChat(false);
@@ -162,12 +124,17 @@ function AIChatScreen({ goto }) {
     requestAnimationFrame(autoResize);
     setLoading(true);
     try {
-      const reply = await window.claude.complete({
-        system: buildSystemPrompt(a),
-        messages: next.map(m => ({ role: m.role, content: m.content })),
-        max_tokens: 400,
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          history: messages.map(m => ({ role: m.role, content: m.content })),
+        }),
       });
-      revealReply((reply || '').trim() || 'ما قدرت أجاوب هالمرة، جرّب مرة ثانية.');
+      if (!res.ok) throw new Error('chat request failed');
+      const data = await res.json();
+      revealReply((data.reply || '').trim() || 'ما قدرت أجاوب هالمرة، جرّب مرة ثانية.');
     } catch (e) {
       setLoading(false);
       setMessages(m => [...m, { role: 'assistant', content: 'صار خطأ بسيط بالاتصال، جرّب تسأل مرة ثانية.' }]);
@@ -242,10 +209,12 @@ function AIChatScreen({ goto }) {
         )}
       </div>
 
-      {/* Composer — grows with content, mirrors Claude's input treatment */}
+      {/* Composer — grows with content, mirrors Claude's input treatment.
+          Bottom padding clears BottomNav (~82px tall, position:absolute,
+          zIndex:100) so the send button isn't hidden underneath it. */}
       <div style={{
-        flexShrink: 0, padding: '10px 14px calc(env(safe-area-inset-bottom, 0px) + 14px)',
-        background: 'var(--vanilla)',
+        flexShrink: 0, padding: '10px 14px calc(env(safe-area-inset-bottom, 0px) + 92px)',
+        background: 'var(--vanilla)', position: 'relative', zIndex: 101,
       }}>
         <div style={{
           display: 'flex', alignItems: 'flex-end', gap: 8,
