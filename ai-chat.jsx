@@ -33,17 +33,25 @@ function TypingDots() {
   );
 }
 
-// Assistant turns render as plain flowing text (no bubble/border), like
-// Claude's own chat UI — just a small sparkle mark leading the block.
+// Assistant turns: a small mark-avatar sits at the bubble's near corner,
+// which is why that one corner (top-right, since the avatar renders first
+// in DOM and RTL row layout puts it there) is squared off instead of
+// rounded — a little "tab" reads as a speech-bubble tail without needing
+// an actual triangle. Assistant is anchored to the reading-start (right)
+// side; user turns mirror this to the opposite (left) side below.
 function AssistantTurn({ content, streaming }) {
   return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 22, animation: 'chatFadeIn 0.25s ease' }}>
+    <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'flex-start', animation: 'chatFadeIn 0.25s ease' }}>
       <div style={{
         width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 2,
         background: 'var(--green)', color: 'var(--cream)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}><Icon.sparkle size={11} /></div>
-      <div style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--ink)', whiteSpace: 'pre-wrap', paddingTop: 1 }}>
+      <div style={{
+        maxWidth: '80%', padding: '10px 14px', borderRadius: '18px 4px 18px 18px',
+        background: '#fff', border: '1px solid rgba(27,52,36,0.10)',
+        fontSize: 14, lineHeight: 1.8, color: 'var(--ink)', whiteSpace: 'pre-wrap',
+      }}>
         {content}
         {streaming && <span className="chat-caret" />}
       </div>
@@ -51,15 +59,21 @@ function AssistantTurn({ content, streaming }) {
   );
 }
 
-// User turns keep a light tinted bubble aligned to the reading-start side.
+// User turns mirror AssistantTurn: avatar on the left, bubble's near
+// (top-left) corner squared off, whole row pushed to the far side.
 function UserTurn({ content }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 18, animation: 'chatFadeIn 0.2s ease' }}>
+    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16, alignItems: 'flex-start', animation: 'chatFadeIn 0.2s ease' }}>
       <div style={{
-        maxWidth: '82%', padding: '10px 14px', borderRadius: '16px 16px 4px 16px',
+        maxWidth: '78%', padding: '10px 14px', borderRadius: '4px 18px 18px 18px',
         background: 'var(--vanilla-soft)', border: '1px solid rgba(168,117,74,0.18)',
         color: 'var(--ink)', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap',
       }}>{content}</div>
+      <div style={{
+        width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+        background: 'var(--sadu-brown)', color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}><Icon.users size={11} /></div>
     </div>
   );
 }
@@ -70,7 +84,7 @@ function AIChatScreen({ goto }) {
       const saved = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || 'null');
       if (saved && saved.length) return saved;
     } catch (e) { /* ignore */ }
-    return [{ role: 'assistant', content: 'هلا! أنا مساعدك الذكي في ريالك 👋\nأقدر أجاوبك على أسئلة عن مصروفك، أهدافك، أو جمعيتك. جرّب تسألني شي.' }];
+    return [];
   });
   const [input, setInput] = useStateChat('');
   const [loading, setLoading] = useStateChat(false);
@@ -148,19 +162,65 @@ function AIChatScreen({ goto }) {
     }
   };
 
+  // Resets to a fresh conversation — clears in-flight streaming/loading
+  // state too, since a stale timer could otherwise keep writing into the
+  // new message list.
+  const startNewChat = () => {
+    if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+    setStreamText(null);
+    setLoading(false);
+    setInput('');
+    setMessages([]);
+    try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify([])); } catch (e) { /* ignore */ }
+  };
+
   const hasUserMessage = messages.some(m => m.role === 'user');
   const canSend = !loading && input.trim().length > 0;
 
   return (
-    <div className="screen-enter" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="screen-enter" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--vanilla)' }}>
+      {/* Empty-state mark: a faint tiled wordmark confined to the top-left
+          corner (never spans full width, so it can't drift under content),
+          plus one solid, deliberate logo mark centered in the empty middle
+          of the screen — a splash-screen moment rather than a background
+          texture. Both sit at zIndex 0, below the header/messages/composer
+          (zIndex 1/101), and only render before the first user message. */}
+      {!hasUserMessage && (
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div style={{
+            position: 'absolute', top: -10, left: -20, width: '70%', height: 170,
+            backgroundImage: 'url(logo.png)', backgroundRepeat: 'repeat',
+            backgroundSize: '100px 59px', opacity: 0.05,
+            transform: 'rotate(-10deg) scale(1.5)', transformOrigin: 'top left',
+            maskImage: 'linear-gradient(135deg, black 0%, transparent 80%)',
+            WebkitMaskImage: 'linear-gradient(135deg, black 0%, transparent 80%)',
+          }} />
+          <img src="logo.png" alt="" style={{
+            position: 'absolute', top: '32%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 118,
+          }} />
+        </div>
+      )}
+
       {/* Header */}
-      <div style={{ padding: '18px 18px 10px', flexShrink: 0 }}>
-        <button onClick={() => goto('home')} style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          color: 'var(--sadu-brown)', fontSize: 11, fontWeight: 600, marginBottom: 6,
-          fontFamily: 'IBM Plex Sans Arabic, sans-serif',
-        }}><Icon.arrowRight size={13} /> رجوع</button>
+      <div style={{ padding: '18px 18px 10px', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <button onClick={() => goto('home')} style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            color: 'var(--sadu-brown)', fontSize: 11, fontWeight: 600,
+            fontFamily: 'IBM Plex Sans Arabic, sans-serif',
+          }}><Icon.arrowRight size={13} /> رجوع</button>
+          {hasUserMessage && (
+            <button onClick={startNewChat} style={{
+              background: 'rgba(27,52,36,0.06)', border: 'none', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              color: 'var(--green)', fontSize: 11, fontWeight: 600,
+              fontFamily: 'IBM Plex Sans Arabic, sans-serif',
+              borderRadius: 999, padding: '6px 11px',
+            }}><Icon.plus size={12} /> محادثة جديدة</button>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 34, height: 34, borderRadius: 11, flexShrink: 0,
@@ -175,7 +235,7 @@ function AIChatScreen({ goto }) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '4px 16px' }}>
+      <div ref={scrollRef} className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', position: 'relative', zIndex: 1 }}>
         {messages.map((m, i) => m.role === 'user'
           ? <UserTurn key={i} content={m.content} />
           : <AssistantTurn key={i} content={m.content} />
@@ -185,7 +245,7 @@ function AIChatScreen({ goto }) {
           streamText !== null
             ? <AssistantTurn content={streamText} streaming />
             : (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <div style={{
                   width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 2,
                   background: 'var(--green)', color: 'var(--cream)',
@@ -195,55 +255,69 @@ function AIChatScreen({ goto }) {
               </div>
             )
         )}
-
-        {!hasUserMessage && !loading && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4, marginBottom: 8 }}>
-            {QUICK_QUESTIONS.map(q => (
-              <button key={q} onClick={() => send(q)} style={{
-                background: 'rgba(27,52,36,0.06)', color: 'var(--green)', border: 'none',
-                borderRadius: 999, padding: '9px 13px', fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'IBM Plex Sans Arabic, sans-serif',
-              }}>{q}</button>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Quick-question chips — live just above the composer rather than
+          under the header, so they never compete with the centered splash
+          logo for space. Only shown before the first user message. */}
+      {!hasUserMessage && !loading && (
+        <div style={{
+          flexShrink: 0, padding: '0 16px 6px', position: 'relative', zIndex: 1,
+          display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end',
+        }}>
+          {QUICK_QUESTIONS.map(q => (
+            <button key={q} onClick={() => send(q)} style={{
+              background: 'rgba(27,52,36,0.06)', color: 'var(--green)', border: 'none',
+              borderRadius: 999, padding: '9px 13px', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'IBM Plex Sans Arabic, sans-serif',
+            }}>{q}</button>
+          ))}
+        </div>
+      )}
 
       {/* Composer — grows with content, mirrors Claude's input treatment.
           Bottom padding clears BottomNav (~82px tall, position:absolute,
-          zIndex:100) so the send button isn't hidden underneath it. */}
+          zIndex:100) so the send button isn't hidden underneath it. A row
+          of sadu diamonds rides the pill's top edge like a woven trim, and
+          the send button uses a diagonal arrow to match it. */}
       <div style={{
-        flexShrink: 0, padding: '10px 14px calc(env(safe-area-inset-bottom, 0px) + 92px)',
+        flexShrink: 0, padding: '10px 14px calc(env(safe-area-inset-bottom, 0px) + 74px)',
         background: 'var(--vanilla)', position: 'relative', zIndex: 101,
       }}>
-        <div style={{
-          display: 'flex', alignItems: 'flex-end', gap: 8,
-          background: '#fff', borderRadius: 20, padding: '8px 8px 8px 14px',
-          border: '1.5px solid rgba(27,52,36,0.14)',
-        }}>
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={e => { setInput(e.target.value); autoResize(); }}
-            onKeyDown={onKeyDown}
-            placeholder="اكتب سؤالك..."
-            style={{
-              flex: 1, resize: 'none', border: 'none', outline: 'none', background: 'transparent',
-              fontSize: 16, fontFamily: 'IBM Plex Sans Arabic, sans-serif', direction: 'rtl',
-              color: 'var(--ink)', lineHeight: 1.5, maxHeight: 120, padding: '6px 0',
-            }}
-          />
-          <button onClick={() => send()} disabled={!canSend} style={{
-            width: 36, height: 36, borderRadius: '50%', flexShrink: 0, border: 'none',
-            background: canSend ? 'var(--green)' : 'rgba(27,52,36,0.12)',
-            color: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: canSend ? 'pointer' : 'default', transition: 'background 0.15s ease',
+        <div style={{ position: 'relative' }}>
+          <SaduStrip variant="diamonds" style={{
+            position: 'absolute', top: -7, left: 18, right: 18, gap: 0,
+            padding: 0, justifyContent: 'space-between', pointerEvents: 'none',
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'flex-end', gap: 8,
+            background: '#fff', borderRadius: 20, padding: '8px 8px 8px 14px',
+            border: '1.5px solid rgba(27,52,36,0.14)',
           }}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V6M6 11l6-6 6 6" />
-            </svg>
-          </button>
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={e => { setInput(e.target.value); autoResize(); }}
+              onKeyDown={onKeyDown}
+              placeholder="اكتب سؤالك..."
+              style={{
+                flex: 1, resize: 'none', border: 'none', outline: 'none', background: 'transparent',
+                fontSize: 16, fontFamily: 'IBM Plex Sans Arabic, sans-serif', direction: 'rtl',
+                color: 'var(--ink)', lineHeight: 1.5, maxHeight: 120, padding: '6px 0',
+              }}
+            />
+            <button onClick={() => send()} disabled={!canSend} style={{
+              width: 36, height: 36, borderRadius: '50%', flexShrink: 0, border: 'none',
+              background: canSend ? 'var(--green)' : 'rgba(27,52,36,0.12)',
+              color: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: canSend ? 'pointer' : 'default', transition: 'background 0.15s ease',
+            }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 17L17 7M8 7h9v9" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
